@@ -1,0 +1,45 @@
+name: Deploy bot to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  # Папка бота на сервере; .env и data/ в ней не перезаписываются.
+  DEPLOY_PATH: ${{ secrets.BOT_DEPLOY_PATH || '/opt/kamsnab-assistant-bot' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: "Dockerfile,.dockerignore,docker-compose.yml,package.json,pnpm-lock.yaml,src"
+          target: ${{ env.DEPLOY_PATH }}
+          rm: false
+
+      - name: Rebuild and restart
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd "${{ env.DEPLOY_PATH }}"
+            if [ ! -f .env ]; then
+              echo "Нет файла $PWD/.env — создайте его по образцу .env.example" >&2
+              exit 1
+            fi
+            docker compose up -d --build
+            docker image prune -f

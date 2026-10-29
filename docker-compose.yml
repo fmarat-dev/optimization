@@ -1,3 +1,5 @@
+name: kamsnab-assistant-bot
+
 services:
   bot:
     build: .

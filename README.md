@@ -34,6 +34,26 @@ Telegram ID, чтобы его можно было передать админи
 
 История переписки хранится в папке `data/`.
 
+### Автодеплой на сервер сайта
+
+Workflow `.github/workflows/deploy.yml` при каждом пуше в `main` копирует файлы бота
+на сервер по SSH и перезапускает контейнер. Сайт и его `docker compose` он не трогает.
+
+Один раз:
+
+1. В репозитории `optimization` → Settings → Secrets and variables → Actions добавьте
+   те же секреты, что у `kamsnab`: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` и, если порт
+   не 22, `VPS_PORT`. Необязательно: `BOT_DEPLOY_PATH` (по умолчанию
+   `/opt/kamsnab-assistant-bot`).
+2. На сервере создайте папку и `.env`:
+
+   ```sh
+   mkdir -p /opt/kamsnab-assistant-bot && cd /opt/kamsnab-assistant-bot
+   nano .env   # содержимое — по образцу .env.example
+   ```
+
+3. Запустите деплой: пуш в `main` или Actions → Deploy bot to VPS → Run workflow.
+
 ### Код
 
 - `src/bot/main.ts` — обработка сообщений Telegram, файлы, доступ.
